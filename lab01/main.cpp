@@ -7,6 +7,9 @@
 #include <random>
 #include <unordered_map>
 
+typedef std::chrono::steady_clock clk;
+typedef std::chrono::duration<double, std::milli> duration;
+
 template <class T>
 void print(T x) {
   std::cout << x << std::endl;
@@ -128,41 +131,11 @@ auto findC(std::span<T, N> s, std::span<T, N> cache, T needle) {
 
 template <class... T>
 double bench(T... args) {
-  typedef std::chrono::steady_clock clock;
-  typedef std::chrono::duration<double, std::milli> duration;
-
-  auto t0 = clock::now();
-  for (auto i = 0u; i < 100; ++i) {
-    black_box(sum_linear_search(black_box(args)...));
-  }
-  duration dur = clock::now() - t0;
-  return dur.count();
-}
-
-
-template <class... T>
-double benchA(T... args) {
-  typedef std::chrono::steady_clock clock;
-  typedef std::chrono::duration<double, std::milli> duration;
-
-  auto t0 = clock::now();
+  auto t0 = clk::now();
   for (auto i = 0u; i < 3; ++i) {
-    black_box(sum_search(black_box(args)...));
+    black_box(findC(black_box(args)...));
   }
-  duration dur = clock::now() - t0;
-  return dur.count();
-}
-
-
-double benchC(std::span<int32_t> s, std::span<int32_t> cache, int32_t j) {
-  typedef std::chrono::steady_clock clock;
-  typedef std::chrono::duration<double, std::milli> duration;
-
-  auto t0 = clock::now();
-  for (auto i = 0u; i < 3; ++i) {
-    black_box(findC(s, cache, black_box(j)));
-  }
-  duration dur = clock::now() - t0;
+  duration dur = clk::now() - t0;
   return dur.count();
 }
 
@@ -174,8 +147,8 @@ void bench_with(std::span<T, N> s, size_t i) {
   auto cache = std::span(v); // for C benching
   double time = 0;
   for (size_t j = 0; j < 100; ++j) {
-    time += benchA(s.subspan(0, i), dist(mt));
-    // time += benchC(s.subspan(0, i), cache, dist(mt));
+    // time += bench(s.subspan(0, i), dist(mt));
+    time += bench(s.subspan(0, i), cache, dist(mt));
   }
   std::cout << i << "\t" << time << std::endl;
 }
